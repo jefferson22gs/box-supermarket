@@ -16,6 +16,7 @@ document.addEventListener('DOMContentLoaded', async ()=>{
       const tab = btn.dataset.tab || btn.getAttribute('data-tab');
       document.querySelectorAll('.screen').forEach(s=> s.style.display = 'none');
       if(tab === 'reports') document.getElementById('screen-dashboard').style.display = 'block';
+      else if(tab === 'settings') document.getElementById('screen-settings').style.display = 'block';
       else document.getElementById('screen-pos').style.display = 'block';
     };
   });
@@ -33,6 +34,16 @@ document.addEventListener('DOMContentLoaded', async ()=>{
   document.getElementById('complete-sale').onclick = completeSale;
   document.getElementById('print-last-receipt').onclick = printLastReceipt;
   document.getElementById('close-day-btn').onclick = closeDay;
+  
+  // Botões do header que estavam faltando no código original
+  document.getElementById('open-products-btn').onclick = () => alert('Funcionalidade "Gerenciar Produtos" a ser implementada.');
+  document.getElementById('open-dashboard-btn').onclick = () => {
+      document.querySelectorAll('.tabs button').forEach(b=>b.classList.remove('active'));
+      document.querySelector('button[data-tab="reports"]').classList.add('active');
+      document.querySelectorAll('.screen').forEach(s=> s.style.display = 'none');
+      document.getElementById('screen-dashboard').style.display = 'block';
+  };
+
 
   await ensureAuthState();
   await loadStoreInfo();
