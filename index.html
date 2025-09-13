@@ -1,0 +1,143 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1" />
+<title>POS - Supermercado (Supabase) - Extended</title>
+<link rel="stylesheet" href="styles.css" />
+</head>
+<body>
+<header>
+  <h1 id="app-title">POS - Supermercado</h1>
+  <div class="top-actions">
+    <button id="open-login-btn">Login</button>
+    <button id="open-owner-btn">Dados do Mercado</button>
+    <button id="open-operators-btn">Operadores</button>
+    <button id="open-products-btn">Gerenciar Produtos</button>
+    <button id="open-dashboard-btn">Dashboard</button>
+    <span id="user-info" class="small">Offline</span>
+  </div>
+</header>
+
+<main class="container">
+  <nav class="tabs">
+    <button data-tab="pos" class="active">POS</button>
+    <button data-tab="reports">Relatórios</button>
+    <button data-tab="settings">Configurações</button>
+  </nav>
+
+  <section class="screen" id="screen-pos">
+    <div class="pos">
+      <div class="product-search">
+        <input id="search" placeholder="Pesquisar por nome ou código de barras" />
+        <button id="scan-sim">Simular Leitura</button>
+      </div>
+
+      <div class="products-list" id="products-list"></div>
+
+      <div class="cart">
+        <h2>Carrinho</h2>
+        <table id="cart-table">
+          <thead><tr><th>Produto</th><th>Qtd</th><th>Preço</th><th>Desconto</th><th>Subtotal</th><th></th></tr></thead>
+          <tbody></tbody>
+        </table>
+
+        <div class="cart-controls">
+          <label>Total desconto (R$ ou %): 
+            <input id="total-discount" placeholder="ex: 5 ou 10%" />
+          </label>
+          <div class="totals">
+            <div>Subtotal: <span id="subtotal">R$ 0,00</span></div>
+            <div>Desconto: <span id="discount-amount">R$ 0,00</span></div>
+            <div><strong>Total: <span id="total">R$ 0,00</span></strong></div>
+          </div>
+          <div class="payment">
+            <label>Pago: R$ <input id="amount-paid" type="number" min="0" step="0.01" /></label>
+            <button id="complete-sale">Finalizar Venda</button>
+            <button id="print-last-receipt">Imprimir Cupom</button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section class="screen" id="screen-dashboard" style="display:none">
+    <h2>Dashboard</h2>
+    <div id="dashboard-widgets" class="grid">
+      <div class="card"><h3>Vendas Hoje</h3><div id="metric-today">R$ 0,00</div></div>
+      <div class="card"><h3>Vendas Semana</h3><div id="metric-week">R$ 0,00</div></div>
+      <div class="card"><h3>Vendas Mês</h3><div id="metric-month">R$ 0,00</div></div>
+      <div class="card"><h3>Vendas Trimestre</h3><div id="metric-quarter">R$ 0,00</div></div>
+      <div class="card"><h3>Vendas Ano</h3><div id="metric-year">R$ 0,00</div></div>
+    </div>
+    <div style="margin-top:12px">
+      <button id="close-day-btn">Fechar Caixa (Fim do Dia)</button>
+      <div id="close-result" class="small"></div>
+    </div>
+  </section>
+
+  <section class="screen" id="screen-settings" style="display:none">
+    <h2>Configurações</h2>
+    <p>Use "Dados do Mercado" para preencher informações que aparecerão no cupom.</p>
+  </section>
+</main>
+
+<!-- Modals -->
+<div class="modal" id="login-modal" aria-hidden="true">
+  <div class="modal-content">
+    <h2>Login</h2>
+    <form id="login-form">
+      <label>Email:<input id="login-email" type="email" required /></label>
+      <label>Senha:<input id="login-pass" type="password" required /></label>
+      <div class="form-actions">
+        <button type="submit">Entrar</button>
+        <button type="button" id="close-login-modal">Fechar</button>
+      </div>
+    </form>
+    <div class="small">Autenticação via Supabase Auth</div>
+  </div>
+</div>
+
+<div class="modal" id="owner-modal" aria-hidden="true">
+  <div class="modal-content">
+    <h2>Dados do Mercado</h2>
+    <form id="owner-form">
+      <input id="store-id" type="hidden" />
+      <label>Nome do Mercado:<input id="store-name" required/></label>
+      <label>CNPJ:<input id="store-cnpj"/></label>
+      <label>Endereço:<input id="store-address"/></label>
+      <label>Telefone:<input id="store-phone"/></label>
+      <label>Logo (PNG/JPG):<input id="store-logo" type="file" accept="image/*" /></label>
+      <div class="form-actions">
+        <button type="submit">Salvar</button>
+        <button type="button" id="close-owner-modal">Fechar</button>
+      </div>
+    </form>
+    <hr/>
+    <div id="store-preview" class="small"></div>
+  </div>
+</div>
+
+<div class="modal" id="operators-modal" aria-hidden="true">
+  <div class="modal-content">
+    <h2>Operadores</h2>
+    <form id="operator-form">
+      <label>Email:<input id="op-email" type="email" required/></label>
+      <label>Senha:<input id="op-pass" type="password" required/></label>
+      <div class="form-actions">
+        <button type="submit">Adicionar Operador</button>
+      </div>
+    </form>
+    <hr/>
+    <div id="operators-list" class="small"></div>
+    <div class="small">Operadores são contas do Supabase Auth. O dono cria operadores aqui.</div>
+  </div>
+</div>
+
+<iframe id="receipt-frame" style="display:none"></iframe>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js/dist/umd/supabase.min.js"></script>
+<script src="config.js"></script>
+<script src="app_supabase_extended.js"></script>
+</body>
+</html>
