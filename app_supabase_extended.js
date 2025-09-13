@@ -72,9 +72,40 @@ async function login(e){
 }
 
 // STORE INFO
-async function loadStoreInfo(){
-  const res = await supabaseClient.from('store_info').select('*').limit(1).single().catch(()=>({data:null}));
-  if(res && res.data){ window._STORE = res.data; const pv = $('#store-preview'); pv.innerHTML = ''; if(res.data.logo_base64){ const img = document.createElement('img'); img.src = res.data.logo_base64; img.style.maxWidth='120px'; pv.appendChild(img); } pv.appendChild(document.createTextNode((res.data.name||'') + (res.data.cnpj? ' • CNPJ: '+res.data.cnpj: ''))); } else { window._STORE = null; $('#store-preview').textContent = 'Nenhum registro do mercado.'; }
+async function loadStoreInfo() {
+  // A forma correta de chamar e tratar erros do Supabase
+  const { data, error } = await supabaseClient
+    .from('store_info')
+    .select('*')
+    .limit(1)
+    .single();
+
+  // Se o Supabase retornar um erro (ex: problema de permissão, etc)
+  if (error) {
+    console.error('Erro ao carregar dados da loja:', error);
+    window._STORE = null;
+    $('#store-preview').textContent = 'Erro ao carregar dados da loja.';
+    return;
+  }
+
+  // Se a busca funcionar, mas não retornar nenhum dado
+  if (!data) {
+     window._STORE = null;
+     $('#store-preview').textContent = 'Nenhum registro do mercado encontrado.';
+     return;
+  }
+  
+  // Se a busca trouxer os dados corretamente
+  window._STORE = data;
+  const pv = $('#store-preview');
+  pv.innerHTML = '';
+  if (data.logo_base64) {
+    const img = document.createElement('img');
+    img.src = data.logo_base64;
+    img.style.maxWidth = '120px';
+    pv.appendChild(img);
+  }
+  pv.appendChild(document.createTextNode((data.name || '') + (data.cnpj ? ' • CNPJ: ' + data.cnpj : '')));
 }
 function toBase64(file){ return new Promise((res, rej)=>{ const reader = new FileReader(); reader.onload = ()=> res(reader.result); reader.onerror = err => rej(err); reader.readAsDataURL(file); }); }
 async function saveStoreInfo(e){ e.preventDefault(); const id='store'; const name=$('#store-name').value.trim(); const cnpj=$('#store-cnpj').value.trim(); const address=$('#store-address').value.trim(); const phone=$('#store-phone').value.trim(); const fileInput=$('#store-logo'); let logo_b64=null; if(fileInput && fileInput.files && fileInput.files[0]) logo_b64 = await toBase64(fileInput.files[0]); else if(window._STORE && window._STORE.logo_base64) logo_b64 = window._STORE.logo_base64; const payload={id,name,cnpj,address,phone,logo_base64:logo_b64}; const up = await supabaseClient.from('store_info').upsert(payload); if(up.error){ alert('Erro: '+up.error.message); return; } alert('Dados salvos'); await loadStoreInfo(); $('#owner-modal').setAttribute('aria-hidden','true'); }
